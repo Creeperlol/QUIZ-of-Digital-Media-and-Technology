@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>數位媒體與科技概論</title>
+  <style>
+    body { font-family: "新細明體", Arial, sans-serif; background: #f8f8f8; margin: 0; padding: 40px; }
+    #container { background: #fff; padding: 32px; border-radius: 16px; box-shadow: 0 0 24px #ccc; max-width: 500px; margin: auto; }
+    .question { font-size: 20px; margin-bottom: 18px; }
+    .options { margin-bottom: 16px; }
+    .option-btn { display: block; width: 100%; margin-bottom: 16px; padding: 10px; font-size:16px; background:#e8e8f3; border: 1px solid #ccc; border-radius: 8px; cursor:pointer; }
+    .option-btn.correct { background: #c5f1cd; }
+    .option-btn.incorrect { background: #f1cccc; }
+    #result { font-size: 18px; margin-bottom: 18px; color: #149014; }
+    #next-btn { background:#3577d4; color:#fff; border:none; padding:10px 16px; border-radius:8px; cursor:pointer; font-size:16px; }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <div id="question-block">
+      <div id="question" class="question"></div>
+      <div id="options" class="options"></div>
+      <div id="result"></div>
+      <button id="next-btn" style="display:none">下一題</button>
+      <div id="progress" style="margin-top:12px; color:#888; font-size:14px;"></div>
+    </div>
+  </div>
+<script>
+let questionBank = null;
+let quizOrder = [];
+let currentIndex = 0;
+let correctCount = 0;
+let wrongCount = 0;
+
+function shuffle(array) {
+  // Fisher-Yates洗牌
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+}
+
+function showQuestion() {
+  document.getElementById('result').innerText = '';
+  document.getElementById('next-btn').style.display = 'none';
+  let pos = quizOrder[currentIndex];
+  let q = questionBank[pos];
+  document.getElementById('question').innerText = `${q.question}`;
+  let opts = document.getElementById('options');
+  opts.innerHTML = '';
+  for (let key of ['A','B','C','D']) {
+    let btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.innerText = `${key}. ${q.options[key]}`;
+    btn.onclick = function() {
+      if (this.disabled) return;
+      if (key === q.answer) {
+        this.classList.add('correct');
+        document.getElementById('result').innerText = 'Correct';
+        correctCount++;
+      } else {
+        this.classList.add('incorrect');
+        document.getElementById('result').innerText = `Wrong: (${q.answer})`;
+        wrongCount++;
+      }
+      Array.from(opts.children).forEach(btn => btn.disabled = true);
+      document.getElementById('next-btn').style.display = '';
+      showProgress();
+    };
+    opts.appendChild(btn);
+  }
+  showProgress();
+}
+
+function showProgress() {
+  document.getElementById('progress').innerText = `題目 ${currentIndex+1} / ${quizOrder.length} ｜ 正確 ${correctCount} ｜ 錯誤 ${wrongCount}`;
+}
+
+fetch('question_bank.json')
+  .then(response => response.json())
+  .then(data => {
+    questionBank = Object.values(data).flat();
+    quizOrder = Array.from({length: questionBank.length}, (v,i) => i);
+    shuffle(quizOrder);
+    currentIndex = 0;
+    correctCount = 0;
+    wrongCount = 0;
+    showQuestion();
+  });
+
+ document.getElementById('next-btn').onclick = function(){
+    currentIndex++;
+    if(currentIndex >= quizOrder.length) {
+      shuffle(quizOrder);
+      currentIndex = 0;
+      alert('全部題目已完成');
+      correctCount = 0; // 重新計算
+      wrongCount = 0;
+    }
+    showQuestion();
+ };
+</script>
+</body>
+</html>
